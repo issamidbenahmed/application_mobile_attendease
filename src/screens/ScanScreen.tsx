@@ -103,7 +103,9 @@ export default function ScanScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Scanner le Code QR</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Scanner le Code QR</Text>
+        </View>
 
         <View style={styles.scanContainer}>
           {isScanning ? (
@@ -172,18 +174,28 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
   },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 40,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#EF4444',
     textAlign: 'center',
-    color: '#1A237E',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
   },
   scanContainer: {
     alignItems: 'center',

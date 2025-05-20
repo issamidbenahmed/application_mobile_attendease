@@ -30,7 +30,7 @@ interface AttendanceRecord {
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http:/192.168.1.42:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http:/100.70.33.62:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
