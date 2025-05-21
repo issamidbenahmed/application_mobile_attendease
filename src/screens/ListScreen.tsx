@@ -30,12 +30,16 @@ interface AttendanceRecord {
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http:/100.70.33.62:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http://192.168.1.33:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // State for statistics
+  const [presentCount, setPresentCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
 
   // Load attendance data from API using fetch
   useEffect(() => {
@@ -83,6 +87,13 @@ export default function ListScreen() {
           
           console.log('6. Liste finale à afficher:', JSON.stringify(fetchedList, null, 2));
           setAttendanceList(fetchedList);
+
+          // Calculate statistics
+          const present = fetchedList.filter(record => record.status === 'présent' || record.status === 'present').length;
+          const absent = fetchedList.filter(record => record.status === 'absent').length;
+          setPresentCount(present);
+          setAbsentCount(absent);
+
         } else {
           console.log('6b. Aucune donnée reçue');
           setAttendanceList([]);
@@ -107,7 +118,7 @@ export default function ListScreen() {
 
     const intervalId = setInterval(() => {
       fetchAttendances();  // Rafraîchissement toutes les 3 secondes
-    }, 70000);
+    }, 15000);
   
     return () => clearInterval(intervalId);
    
@@ -227,7 +238,14 @@ export default function ListScreen() {
             <MaterialIcons name="error" size={24} color="#EF4444" />
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        ) : attendanceList.length === 0 ? (
+        ) : (
+          <View style={styles.statsContainer}>
+            <Text style={styles.statText}>Présents: {presentCount}</Text>
+            <Text style={styles.statText}>Absents: {absentCount}</Text>
+          </View>
+        )}
+
+        {isLoading ? null : error ? null : attendanceList.length === 0 ? (
           <View style={styles.emptyList}>
             <MaterialIcons name="info-outline" size={48} color="#6B7280" />
             <Text style={styles.emptyText}>
@@ -453,5 +471,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#4B5563',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#ffffff', // Light background for the stats bar
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb', // Subtle border
+  },
+  statText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151', // text-foreground
   },
 });

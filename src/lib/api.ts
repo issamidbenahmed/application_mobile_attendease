@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Configuration de l'URL de base de l'API - mettre à jour avec l'URL correcte
 // Utiliser l'adresse IP locale pour accéder au serveur Laravel depuis l'application mobile
-const API_URL = 'http://100.70.33.62:8000/api';
+const API_URL = 'http://192.168.1.33:8000/api';
 
 // Création de l'instance axios
 const api = axios.create({

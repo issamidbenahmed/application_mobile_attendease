@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -45,8 +44,11 @@ export default function SignInPage() {
     <div className="flex items-center justify-center min-h-screen bg-secondary">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold text-primary">AttendEase</CardTitle>
-          <CardDescription>Sign in to manage attendance</CardDescription>
+          <div className="flex justify-center mb-4">
+            <img src="/logo.png" alt="Logo" className="h-16 w-16" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-primary">Contrôle d'absence</CardTitle>
+          <CardDescription>Connectez-vous pour gérer les présences</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignIn}>
           <CardContent className="space-y-4">

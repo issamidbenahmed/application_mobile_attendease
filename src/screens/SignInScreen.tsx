@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView, 
   Platform,
   SafeAreaView,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { authService } from '../lib/api';
@@ -69,7 +70,12 @@ export default function SignInScreen({ navigation }: SignInScreenProps) {
       >
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>AttendEase</Text>
+            <Image 
+              source={require('../../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Contrôle d'absence</Text>
             <Text style={styles.description}>Connectez-vous pour gérer les présences</Text>
           </View>
 
@@ -155,6 +161,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 24,
+  },
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: 4,
   },
   title: {
     fontSize: 24,

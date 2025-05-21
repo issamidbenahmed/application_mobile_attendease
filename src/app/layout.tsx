@@ -7,8 +7,8 @@ import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'AttendEase',
-  description: 'Student Attendance Tracker',
+  title: 'Contrôle d\'absence',
+  description: 'Gestion des présences des étudiants',
 };
 
 export default function RootLayout({

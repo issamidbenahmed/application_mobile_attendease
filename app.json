@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AttendeaseApp",
-    "slug": "attendease",
+    "name": "Contrôle d'absence",
+    "slug": "controle-absence",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/favicon.png",

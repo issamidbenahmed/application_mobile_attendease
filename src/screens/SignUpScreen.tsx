@@ -10,7 +10,8 @@ import {
   Platform,
   SafeAreaView,
   ScrollView,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { authService } from '../lib/api';
@@ -100,8 +101,13 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
             <View style={styles.header}>
-              <Text style={styles.title}>Créer un compte</Text>
-              <Text style={styles.description}>Rejoignez AttendEase pour gérer les présences</Text>
+              <Image 
+                source={require('../../assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={styles.title}>Contrôle d'absence</Text>
+              <Text style={styles.description}>Créez un compte pour gérer les présences</Text>
             </View>
 
             <View style={styles.form}>
@@ -218,6 +224,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 24,
+  },
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: 4,
   },
   title: {
     fontSize: 24,
