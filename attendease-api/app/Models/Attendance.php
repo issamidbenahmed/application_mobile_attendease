@@ -17,9 +17,7 @@ class Attendance extends Model
      */
     protected $fillable = [
         'student_code_apogee',
-        'nom',
-        'prenom',
-        'user_id',
+        'exam_room_id',
         'status',
         'course',
         'attended_at',
@@ -36,5 +34,13 @@ class Attendance extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_code_apogee', 'code_apogee');
+    }
+
+    /**
+     * Get the exam room that owns the attendance.
+     */
+    public function examRoom(): BelongsTo
+    {
+        return $this->belongsTo(ExamRoom::class);
     }
 }

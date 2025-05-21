@@ -12,6 +12,7 @@ import SignInScreen from './src/screens/SignInScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import ListScreen from './src/screens/ListScreen';
+import RoomSelectionScreen from './src/screens/RoomSelectionScreen';
 
 // Initialisation du client de requête
 const queryClient = new QueryClient();
@@ -21,11 +22,12 @@ type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   Main: undefined;
+  List: { examRoomId: string };
 };
 
 type TabParamList = {
-  Scan: undefined;
-  List: undefined;
+  Rooms: undefined;
+  Scan: { roomId: string; roomName: string };
 };
 
 // Navigateurs
@@ -44,26 +46,52 @@ function AppTabs() {
       }}
     >
       <Tab.Screen 
-        name="Scan" 
-        component={ScanScreen} 
+        name="Rooms" 
+        component={RoomSelectionScreen} 
         options={{
-          tabBarLabel: 'Scanner',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <MaterialIcons name="qr-code-scanner" size={24} color={color} />
+          tabBarLabel: 'Salles',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <MaterialIcons name="meeting-room" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen 
-        name="List" 
-        component={ListScreen} 
+        name="Scan" 
+        component={ScanScreen} 
         options={{
-          tabBarLabel: 'Liste',
-          tabBarIcon: ({ color }: { color: string }) => (
-            <MaterialIcons name="list" size={24} color={color} />
+          tabBarLabel: 'Scanner',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <MaterialIcons name="qr-code-scanner" size={size} color={color} />
           ),
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+// Composant principal de l'application
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="SignIn" component={SignInScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="Main" component={AppTabs} />
+            <Stack.Screen 
+              name="List" 
+              component={ListScreen}
+              options={{ headerShown: true, title: 'Liste des présences' }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -72,20 +100,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-});
-
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="SignIn" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="SignIn" component={SignInScreen} />
-            <Stack.Screen name="SignUp" component={SignUpScreen} />
-            <Stack.Screen name="Main" component={AppTabs} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </QueryClientProvider>
-  );
-} 
+}); 

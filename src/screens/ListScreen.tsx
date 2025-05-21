@@ -13,24 +13,25 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { attendanceService } from '../lib/api';
+import { useRoute } from '@react-navigation/native';
 
-// Define the structure for an attendance record - matches your database/API response
+// Define the structure for an attendance record
 interface AttendanceRecord {
-  id?: number; // Assuming an ID field exists, might not be needed for display
-  nom: string;
-  prenom: string;
-  code_apogee: string; // Use code_apogee as per your migration
-  cne: string;
-  status: string; // 'présent', 'absent', etc.
-  course?: string | null; // Assuming optional fields
-  attended_at: string; // Timestamp from backend
-  notes?: string | null; // Assuming optional fields
-  created_at?: string;
-  updated_at?: string;
+  id?: number;
+  student: {
+    nom: string;
+    prenom: string;
+    code_apogee: string;
+    cne: string;
+  };
+  status: 'present' | 'absent';
+  attended_at: string | null;
+  exam_room_id: string;
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http://192.168.1.33:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http://192.168.1.38:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
@@ -41,72 +42,60 @@ export default function ListScreen() {
   const [presentCount, setPresentCount] = useState(0);
   const [absentCount, setAbsentCount] = useState(0);
 
-  // Load attendance data from API using fetch
+  const route = useRoute();
+
+  // Load attendance data from API
   useEffect(() => {
     const fetchAttendances = async () => {
       setIsLoading(true);
       setError(null);
       try {
         console.log('1. Début du chargement des données...');
-        console.log('URL de l\'API:', API_URL);
         
-        const response = await fetch(`${API_URL}/attendances`);
-        console.log('2. Réponse reçue du serveur:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        if (!response.ok) {
-          const errorBody = await response.text();
-          console.error('3. Erreur HTTP:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorBody
-          });
-          setError(`Impossible de charger les données: ${response.status} ${response.statusText}`);
+        // Récupérer l'ID de la salle depuis les paramètres de navigation
+        const examRoomId = route.params?.examRoomId;
+        if (!examRoomId) {
+          setError("ID de la salle non spécifié");
           return;
         }
-
-        const data = await response.json();
-        console.log('4. Données reçues:', JSON.stringify(data, null, 2));
+        
+        const response = await attendanceService.getAllAttendances(examRoomId);
+        console.log('2. Réponse reçue du serveur:', response);
+        
+        const data = response.data;
+        console.log('3. Données reçues:', data);
         
         let fetchedList: AttendanceRecord[] = [];
         if (data) {
           if (Array.isArray(data)) {
-            console.log('5a. Données reçues comme tableau direct');
+            console.log('4a. Données reçues comme tableau direct');
             fetchedList = data;
           } else if (data.data && Array.isArray(data.data)) {
-            console.log('5b. Données reçues dans data.data');
+            console.log('4b. Données reçues dans data.data');
             fetchedList = data.data;
           } else {
-            console.error('5c. Structure de données invalide:', data);
+            console.error('4c. Structure de données invalide:', data);
             setError("Structure de données reçues invalide.");
             return;
           }
           
-          console.log('6. Liste finale à afficher:', JSON.stringify(fetchedList, null, 2));
+          console.log('5. Liste finale à afficher:', fetchedList);
           setAttendanceList(fetchedList);
 
           // Calculate statistics
-          const present = fetchedList.filter(record => record.status === 'présent' || record.status === 'present').length;
+          const present = fetchedList.filter(record => record.status === 'present').length;
           const absent = fetchedList.filter(record => record.status === 'absent').length;
           setPresentCount(present);
           setAbsentCount(absent);
 
         } else {
-          console.log('6b. Aucune donnée reçue');
+          console.log('5b. Aucune donnée reçue');
           setAttendanceList([]);
         }
       } catch (error: any) {
-        console.error('7. Erreur lors du chargement:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
+        console.error('6. Erreur lors du chargement:', error);
         setError("Impossible de charger les données de présence depuis le serveur.");
-        if (error instanceof TypeError && error.message === 'Network request failed') {
-          console.error('8. Erreur réseau détaillée');
+        if (error.message === 'Network Error') {
           setError("Erreur réseau: Impossible de se connecter au serveur.");
         }
       } finally {
@@ -117,13 +106,11 @@ export default function ListScreen() {
     fetchAttendances();
 
     const intervalId = setInterval(() => {
-      fetchAttendances();  // Rafraîchissement toutes les 3 secondes
+      fetchAttendances();  // Rafraîchissement toutes les 15 secondes
     }, 15000);
   
     return () => clearInterval(intervalId);
-   
-
-  }, []);
+  }, [route.params?.examRoomId]);
 
 
   // Export attendance data as CSV
@@ -138,10 +125,10 @@ export default function ListScreen() {
       headers.join(','),
       ...attendanceList.map(row =>
         [
-          `"${row.nom}"`,
-          `"${row.prenom}"`,
-          `"${row.code_apogee}"`,
-          `"${row.cne}"`,
+          `"${row.student.nom || ''}"`,
+          `"${row.student.prenom || ''}"`,
+          `"${row.student.code_apogee || ''}"`,
+          `"${row.student.cne || ''}"`,
           `"${row.status}"`,
         ].join(',')
       )
@@ -212,115 +199,81 @@ export default function ListScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Liste des Étudiants</Text>
+        <Text style={styles.title}>Liste des présences</Text>
         <TouchableOpacity 
           style={styles.exportButton}
           onPress={exportToCSV}
-          disabled={isLoading}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#ffffff" size="small" style={styles.buttonIcon} />
-          ) : (
-            <MaterialIcons name="file-download" size={20} color="#ffffff" style={styles.buttonIcon} />
-          )}
+          <MaterialIcons name="file-download" size={24} color="#ffffff" style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Exporter</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.listContainer}>
-        {isLoading ? (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#7C3AED" />
-            <Text style={styles.loadingText}>Chargement des données...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <MaterialIcons name="error" size={24} color="#EF4444" />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : (
-          <View style={styles.statsContainer}>
-            <Text style={styles.statText}>Présents: {presentCount}</Text>
-            <Text style={styles.statText}>Absents: {absentCount}</Text>
-          </View>
-        )}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#7C3AED" />
+          <Text style={styles.loadingText}>Chargement des données...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <View style={styles.statsContainer}>
+          <Text style={styles.statText}>Présents: {presentCount}</Text>
+          <Text style={styles.statText}>Absents: {absentCount}</Text>
+        </View>
+      )}
 
-        {isLoading ? null : error ? null : attendanceList.length === 0 ? (
-          <View style={styles.emptyList}>
-            <MaterialIcons name="info-outline" size={48} color="#6B7280" />
-            <Text style={styles.emptyText}>
-              Aucun enregistrement trouvé.
-            </Text>
-          </View>
-        ) : (
-          <SectionList
-            sections={[
-              {
-                title: 'Liste des étudiants',
-                data: attendanceList
-              }
-            ]}
-            renderItem={({ item }: { item: AttendanceRecord }) => {
-              if (!item) return null;
-              
-              return (
-                <View style={styles.listItem}>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>
-                      {item.prenom ? `${item.prenom} ` : ''}{item.nom || ''}
-                    </Text>
-                    <View style={styles.itemDetails}>
-                      <Text style={styles.itemDetail}>
-                        Code: {item.code_apogee || 'N/A'}
-                      </Text>
-                      <Text style={styles.itemDetail}>
-                        CNE: {item.cne || 'N/A'}
-                      </Text>
-                    </View>
-                    {item.status === 'présent' && item.attended_at && (
-                      <Text style={styles.itemTimestamp}>
-                        {new Date(item.attended_at).toLocaleString()}
-                      </Text>
-                    )}
-                    {item.notes && (
-                      <Text style={styles.itemDetail}>
-                        Notes: {item.notes}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.itemStatus}>
-                    <Text style={[
-                      styles.statusBadge,
-                      item.status === 'présent' || item.status === 'present' ? styles.statusPresent : styles.statusAbsent,
-                    ]}>
-                      {(item.status || 'N/A').toUpperCase()}
-                    </Text>
-                  </View>
+      <SectionList
+        sections={[
+          {
+            title: 'Liste des étudiants',
+            data: attendanceList
+          }
+        ]}
+        renderItem={({ item }: { item: AttendanceRecord }) => {
+          if (!item) return null;
+          
+          return (
+            <View style={styles.listItem}>
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName}>
+                  {item.student.prenom} {item.student.nom}
+                </Text>
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemDetail}>
+                    Code: {item.student.code_apogee}
+                  </Text>
+                  <Text style={styles.itemDetail}>
+                    CNE: {item.student.cne}
+                  </Text>
                 </View>
-              );
-            }}
-            renderSectionHeader={({ section: { title } }) => (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>{title}</Text>
+                {item.status === 'present' && item.attended_at && (
+                  <Text style={styles.itemTimestamp}>
+                    {new Date(item.attended_at).toLocaleString()}
+                  </Text>
+                )}
               </View>
-            )}
-            keyExtractor={(item: AttendanceRecord, index: number) => 
-              item?.code_apogee ? `${item.code_apogee}-${index}` : `item-${index}`
-            }
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            stickySectionHeadersEnabled={false}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyList}>
-                <MaterialIcons name="info-outline" size={48} color="#6B7280" />
-                <Text style={styles.emptyText}>
-                  Aucun enregistrement trouvé.
+              <View style={styles.itemStatus}>
+                <Text style={[
+                  styles.statusBadge,
+                  item.status === 'present' ? styles.statusPresent : styles.statusAbsent,
+                ]}>
+                  {item.status.toUpperCase()}
                 </Text>
               </View>
-            )}
-          />
-        )}
-      </View>
+            </View>
+          );
+        }}
+        keyExtractor={(item: AttendanceRecord, index: number) => 
+          item?.id ? `${item.id}-${index}` : `item-${index}`
+        }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
+      />
     </SafeAreaView>
   );
 }
@@ -335,7 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 16,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -405,30 +358,30 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 4,
   },
-    loadingOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        color: '#6B7280',
-    },
-     errorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FEE2E2',
-        padding: 12,
-        borderRadius: 8,
-        marginTop: 8,
-    },
-    errorText: {
-        color: '#EF4444',
-        marginLeft: 8,
-        flex: 1,
-    },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  errorText: {
+    color: '#EF4444',
+    marginLeft: 8,
+    flex: 1,
+  },
   itemStatus: {
     justifyContent: 'center',
   },
@@ -477,13 +430,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff', // Light background for the stats bar
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb', // Subtle border
+    borderBottomColor: '#e5e7eb',
   },
   statText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151', // text-foreground
+    color: '#374151',
   },
 });

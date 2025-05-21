@@ -1,10 +1,10 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configuration de l'URL de base de l'API - mettre à jour avec l'URL correcte
-// Utiliser l'adresse IP locale pour accéder au serveur Laravel depuis l'application mobile
-const API_URL = 'http://192.168.1.33:8000/api';
+// Configuration de l'URL de base de l'API
+const API_URL = 'http://192.168.1.38:8000/api';
 
-// Création de l'instance axios
+// Création de l'instance axios pour les requêtes authentifiées
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -12,6 +12,29 @@ const api = axios.create({
     'Accept': 'application/json',
   },
 });
+
+// Création d'une instance axios pour les requêtes publiques
+const publicApi = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Intercepteur pour ajouter le token d'authentification
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Service d'authentification
 export const authService = {
@@ -74,9 +97,11 @@ export const studentService = {
 
 // Service pour les présences
 export const attendanceService = {
-  // Récupération de toutes les présences
-  getAllAttendances: () => {
-    return api.get('/attendances');
+  // Récupérer toutes les présences
+  getAllAttendances: (examRoomId: string) => {
+    return api.get('/attendances', {
+      params: { exam_room_id: examRoomId }
+    });
   },
 
   // Récupération d'une présence par ID
@@ -90,12 +115,13 @@ export const attendanceService = {
   },
 
   // Marquer une présence par code QR
-  markAttendanceByCode: (studentData: { nom: string; prenom: string; codeApogee: string; cne: string }) => {
+  markAttendanceByCode: (studentData: { nom: string; prenom: string; code_apogee: string; cne: string; exam_room_id: string }) => {
     return api.post('/attendances/mark-by-code', {
-      code: studentData.codeApogee,
-      status: 'present',
-      course: 'Main Course',
-      notes: `Attendance marked via QR code for ${studentData.prenom} ${studentData.nom}`
+      nom: studentData.nom,
+      prenom: studentData.prenom,
+      code_apogee: studentData.code_apogee,
+      cne: studentData.cne,
+      exam_room_id: studentData.exam_room_id
     });
   },
 
@@ -112,6 +138,39 @@ export const attendanceService = {
   // Suppression d'une présence
   deleteAttendance: (id: number) => {
     return api.delete(`/attendances/${id}`);
+  },
+};
+
+// Service de gestion des salles d'examen (sans authentification)
+export const examRoomService = {
+  // Récupérer toutes les salles
+  getAllRooms: async () => {
+    const response = await publicApi.get('/exam-rooms');
+    return response.data;
+  },
+
+  // Récupérer une salle spécifique
+  getRoom: async (id: number) => {
+    const response = await publicApi.get(`/exam-rooms/${id}`);
+    return response.data;
+  },
+
+  // Créer une nouvelle salle
+  createRoom: async (roomData: { name: string; location?: string; capacity?: number }) => {
+    const response = await publicApi.post('/exam-rooms', roomData);
+    return response.data;
+  },
+
+  // Mettre à jour une salle
+  updateRoom: async (id: number, roomData: { name: string; location?: string; capacity?: number }) => {
+    const response = await publicApi.put(`/exam-rooms/${id}`, roomData);
+    return response.data;
+  },
+
+  // Supprimer une salle
+  deleteRoom: async (id: number) => {
+    const response = await publicApi.delete(`/exam-rooms/${id}`);
+    return response.data;
   },
 };
 

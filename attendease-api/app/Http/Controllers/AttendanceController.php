@@ -14,34 +14,41 @@ class AttendanceController extends Controller
     /**
      * Display a listing of students with their attendance status.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // 1. Récupérer tous les étudiants
+        if (!$request->has('exam_room_id')) {
+            return response()->json([
+                'message' => 'ID de la salle requis'
+            ], 400);
+        }
+
+        $examRoomId = $request->exam_room_id;
+        
+        // Récupérer tous les étudiants
         $students = Student::all();
+        
+        // Récupérer les présences pour la salle spécifiée
+        $attendances = Attendance::where('exam_room_id', $examRoomId)->get();
+        
+        // Créer un tableau des étudiants présents pour cette salle
+        $presentStudents = $attendances->pluck('student_code_apogee')->toArray();
+        
+        // Formater les données pour la réponse
+        $result = $students->map(function ($student) use ($presentStudents, $examRoomId) {
+            // Trouver la présence de l'étudiant pour cette salle spécifique
+            $attendance = $student->attendances()
+                ->where('exam_room_id', $examRoomId)
+                ->first();
 
-        // 2. Récupérer les présences pour aujourd'hui
-        $today = Carbon::now()->toDateString();
-        $attendances = Attendance::whereDate('attended_at', $today)
-                                ->get()
-                                ->keyBy('student_code_apogee');
-
-        // 3. Construire la liste avec le statut pour chaque étudiant
-        $studentListWithStatus = $students->map(function ($student) use ($attendances) {
-            $attendance = $attendances->get($student->code_apogee);
-            $status = $attendance ? $attendance->status : 'absent';
-            
             return [
-                'nom' => $student->nom,
-                'prenom' => $student->prenom,
-                'code_apogee' => $student->code_apogee,
-                'cne' => $student->cne,
-                'status' => $status,
-                'attended_at' => $attendance ? $attendance->attended_at : null,
-                'course' => $attendance ? $attendance->course : null,
+                'student' => $student,
+                'status' => in_array($student->code_apogee, $presentStudents) ? 'present' : 'absent',
+                'attended_at' => $attendance?->attended_at ?? null,
+                'exam_room_id' => $examRoomId
             ];
         });
 
-        return response()->json(['data' => $studentListWithStatus]);
+        return response()->json(['data' => $result]);
     }
 
     /**
@@ -59,7 +66,7 @@ class AttendanceController extends Controller
      */
     public function show(string $id)
     {
-        $attendance = Attendance::with('student')->find($id);
+        $attendance = Attendance::with(['student', 'examRoom'])->find($id);
         
         if (!$attendance) {
             return response()->json([
@@ -85,9 +92,8 @@ class AttendanceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'student_code_apogee' => 'exists:students,code_apogee',
-            'nom' => 'string|max:100',
-            'prenom' => 'string|max:100',
-            'status' => 'in:présent,absent,retard,excusé',
+            'exam_room_id' => 'exists:exam_rooms,id',
+            'status' => 'in:present,absent,late,excused',
             'course' => 'nullable|string|max:100',
             'attended_at' => 'sometimes|date',
             'notes' => 'nullable|string',
@@ -133,79 +139,52 @@ class AttendanceController extends Controller
      */
     public function markByCode(Request $request)
     {
-
-        $validator = Validator::make($request->all(), [
-            // Accepte 'code' ou 'codeApogee' comme identifiant
-            'code' => 'nullable|string',
-            'codeApogee' => 'nullable|string',
-            'course' => 'nullable|string|max:100',
-            'status' => 'required|string|in:present,absent,late,excused',
-            'notes' => 'nullable|string',
+        $validated = $request->validate([
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'code_apogee' => 'required|string',
+            'cne' => 'required|string',
+            'exam_room_id' => 'required|exists:exam_rooms,id'
         ]);
 
-        if ($validator->fails() || (!$request->code && !$request->codeApogee)) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Prend 'codeApogee' si présent, sinon 'code'
-        $studentCode = $request->codeApogee ?? $request->code;
-
-        // Rechercher l'étudiant par code_apogee ou CNE
-        $student = Student::where('code_apogee', $studentCode)
-                          ->orWhere('cne', $studentCode)
-                          ->first();
+        $student = Student::where('code_apogee', $validated['code_apogee'])->first();
 
         if (!$student) {
-            return response()->json([
-                'message' => 'Student not found with this code'
-            ], 404);
+            return response()->json(['message' => 'Étudiant non trouvé'], 404);
         }
 
-        $today = Carbon::now()->toDateString();
-        $course = $request->course ?? 'Main Course';
-        $existingAttendance = Attendance::where('student_code_apogee', $student->code_apogee)
-            ->whereDate('attended_at', $today)
-            ->where('course', $course)
-            ->first();
-        if ($existingAttendance) {
-            return response()->json([
-                'message' => 'Student already marked present for this course today',
-                'data' => $existingAttendance
-            ], 200);
-        }
         $attendance = Attendance::create([
             'student_code_apogee' => $student->code_apogee,
-            'nom' => $student->nom,
-            'prenom' => $student->prenom,
-            'status' => $request->status ?? 'present',
-            'course' => $course,
-            'attended_at' => now(),
-            'notes' => $request->notes
+            'exam_room_id' => $validated['exam_room_id'],
+            'status' => 'present',
+            'attended_at' => now()
         ]);
+
         return response()->json([
-            'message' => 'Attendance marked successfully',
-            'data' => [
-                'attendance' => $attendance,
-                'student' => $student
-            ]
+            'message' => 'Présence enregistrée avec succès',
+            'data' => $attendance
         ], 201);
     }
 
     /**
      * Get attendance statistics.
      */
-    public function stats()
+    public function stats(Request $request)
     {
-        $totalStudents = Student::count();
-        $totalAttendances = Attendance::count();
+        $query = Attendance::query();
+
+        // Filtrer par salle si spécifié
+        if ($request->has('exam_room_id')) {
+            $query->where('exam_room_id', $request->exam_room_id);
+        }
+
+        $totalAttendances = $query->count();
         
         $today = Carbon::now()->toDateString();
-        $todayAttendances = Attendance::where('date', $today)->count();
+        $todayAttendances = (clone $query)->whereDate('created_at', $today)->count();
         
-        $statuses = Attendance::select('status')
+        $statuses = (clone $query)
+            ->select('status')
             ->selectRaw('count(*) as count')
             ->groupBy('status')
             ->get()
@@ -214,7 +193,6 @@ class AttendanceController extends Controller
 
         return response()->json([
             'data' => [
-                'total_students' => $totalStudents,
                 'total_attendances' => $totalAttendances,
                 'today_attendances' => $todayAttendances,
                 'statuses' => $statuses

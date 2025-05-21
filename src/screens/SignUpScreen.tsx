@@ -66,17 +66,11 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
       
       setIsLoading(false);
       
-      // Afficher un message de succès
-      Alert.alert(
-        'Inscription réussie',
-        'Votre compte a été créé avec succès',
-        [
-          {
-            text: 'Se connecter',
-            onPress: () => navigation.navigate('SignIn')
-          }
-        ]
-      );
+      // Redirection directe vers l'écran de connexion
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
     } catch (error: any) {
       console.error('Erreur d\'inscription:', error.message);
       if (error.response) {

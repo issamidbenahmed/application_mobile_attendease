@@ -7,26 +7,49 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { attendanceService } from '../lib/api';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
 // Define the structure for an attendance record
 interface AttendanceRecord {
   nom: string;
   prenom: string;
-  codeApogee: string;
+  code_apogee: string;
   cne: string;
   timestamp: string;
   status: 'présent';
+  exam_room_id?: string;
+}
+
+interface RouteParams {
+  roomId: string;
+  roomName: string;
 }
 
 export default function ScanScreen() {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { roomId = '', roomName = 'Sélectionner une salle' } = route.params as RouteParams || {};
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanResult, setLastScanResult] = useState<AttendanceRecord | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+
+  // Si aucune salle n'est sélectionnée, afficher un message
+  if (!roomId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Scanner le Code QR</Text>
+          <Text style={styles.subtitle}>Veuillez sélectionner une salle</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   useEffect(() => {
     (async () => {
@@ -46,39 +69,62 @@ export default function ScanScreen() {
       // Parse the QR code data
       const studentData = JSON.parse(data);
 
+      // Normalize the data format
+      const normalizedData = {
+        nom: studentData.nom,
+        prenom: studentData.prenom,
+        code_apogee: studentData.code_apogee || studentData.codeApogee,
+        cne: studentData.cne,
+        exam_room_id: roomId
+      };
+
       // Validate the required fields
-      if (!studentData.nom || !studentData.prenom || !studentData.codeApogee || !studentData.cne) {
+      if (!normalizedData.nom || !normalizedData.prenom || !normalizedData.code_apogee || !normalizedData.cne) {
         setScanError("Code QR invalide: données incomplètes");
         return;
       }
 
       const now = new Date();
       const record: AttendanceRecord = {
-        ...studentData,
+        ...normalizedData,
         timestamp: now.toLocaleString(),
         status: 'présent',
       };
 
       try {
-        // Try to mark attendance in API
-          console.log('Envoi des données à l\'API:', studentData);
-          const response = await attendanceService.markAttendanceByCode(studentData);
-          console.log('Réponse de l\'API:', response.data);
+        // Try to mark attendance in API with room ID
+        console.log('Envoi des données à l\'API:', normalizedData);
+        const response = await attendanceService.markAttendanceByCode(normalizedData);
+        console.log('Réponse de l\'API:', response.data);
         
         // If API call successful, update the UI
         setLastScanResult(record);
-        } catch (apiError: any) {
-          console.error('Erreur API détaillée:', {
-            message: apiError.message,
-            response: apiError.response?.data,
-            status: apiError.response?.status,
-            headers: apiError.response?.headers
-          });
+        Alert.alert(
+          'Succès',
+          `Présence enregistrée pour ${normalizedData.prenom} ${normalizedData.nom}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => setIsScanning(false)
+            }
+          ]
+        );
+      } catch (apiError: any) {
+        console.error('Erreur API détaillée:', {
+          message: apiError.message,
+          response: apiError.response?.data,
+          status: apiError.response?.status,
+          headers: apiError.response?.headers
+        });
         setScanError("Erreur lors de l'enregistrement de la présence.");
       }
-    } catch (error) {
+    } catch (err) {
       setScanError("Code QR invalide: format incorrect");
     }
+  };
+
+  const handleViewList = () => {
+    navigation.navigate('List', { examRoomId: roomId });
   };
 
   if (hasPermission === null) {
@@ -104,7 +150,17 @@ export default function ScanScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Scanner le Code QR</Text>
+          <View style={styles.headerLeft}>
+             <Text style={styles.title}>Scanner le Code QR</Text>
+             {roomName && <Text style={styles.subtitle}>{roomName}</Text>}
+          </View>
+          <TouchableOpacity 
+            style={styles.listButton}
+            onPress={handleViewList}
+          >
+            <MaterialIcons name="list" size={24} color="#ffffff" />
+            <Text style={styles.listButtonText}>Voir la liste</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.scanContainer}>
@@ -155,7 +211,7 @@ export default function ScanScreen() {
                 {lastScanResult.prenom} {lastScanResult.nom}
               </Text>
               <Text style={styles.resultText}>
-                Code Apogée: {lastScanResult.codeApogee}
+                Code Apogée: {lastScanResult.code_apogee}
               </Text>
               <Text style={styles.resultText}>
                 CNE: {lastScanResult.cne}
@@ -178,7 +234,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     paddingTop: 40,
@@ -187,11 +243,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  headerLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#EF4444',
-    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 4,
   },
   scrollContent: {
     flexGrow: 1,
@@ -214,7 +278,7 @@ const styles = StyleSheet.create({
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   scanFrame: {
     width: 250,
@@ -280,5 +344,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     marginBottom: 4,
+  },
+  listButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7C3AED',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  listButtonText: {
+    color: '#ffffff',
+    marginLeft: 8,
+    fontWeight: '500',
   },
 }); 

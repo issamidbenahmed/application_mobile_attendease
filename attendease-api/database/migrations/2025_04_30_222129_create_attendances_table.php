@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('student_code_apogee');
             $table->foreign('student_code_apogee')->references('code_apogee')->on('students')->onDelete('cascade');
-            $table->string('nom');
-            $table->string('prenom');
+            $table->foreignId('exam_room_id')->constrained('exam_rooms')->onDelete('cascade');
             $table->string('status')->default('present');
             $table->string('course')->nullable();
             $table->timestamp('attended_at');
