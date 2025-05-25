@@ -21,11 +21,26 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/favicon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.attendease.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "sdkVersion": "49.0.0"
+    "sdkVersion": "49.0.0",
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fontFaces": [
+            {
+              "family": "Material Icons",
+              "fontFamily": "Material Icons",
+              "fontFile": "../node_modules/@expo/vector-icons/fonts/MaterialIcons.ttf"
+            }
+          ]
+        }
+      ]
+    ]
   }
 }

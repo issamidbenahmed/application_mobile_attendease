@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { attendanceService } from '../lib/api';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
 // Define the structure for an attendance record
 interface AttendanceRecord {
@@ -31,7 +31,7 @@ interface AttendanceRecord {
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http://192.168.1.38:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http://192.168.1.36:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
@@ -43,6 +43,7 @@ export default function ListScreen() {
   const [absentCount, setAbsentCount] = useState(0);
 
   const route = useRoute();
+  const navigation = useNavigation();
 
   // Load attendance data from API
   useEffect(() => {
@@ -199,12 +200,20 @@ export default function ListScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Liste des présences</Text>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color="#7C3AED" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Liste des absences</Text>
+        </View>
         <TouchableOpacity 
           style={styles.exportButton}
           onPress={exportToCSV}
         >
-          <MaterialIcons name="file-download" size={24} color="#ffffff" style={styles.buttonIcon} />
+          <MaterialIcons name="file-download" size={20} color="#ffffff" style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Exporter</Text>
         </TouchableOpacity>
       </View>
@@ -298,6 +307,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#EF4444',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   exportButton: {
     backgroundColor: '#7C3AED',

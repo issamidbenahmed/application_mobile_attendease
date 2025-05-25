@@ -1,43 +1,24 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configuration de l'URL de base de l'API
-const API_URL = 'http://192.168.1.38:8000/api';
+// Configuration de l'URL de base de l'API (remplacer par votre URL locale)
+const API_URL = 'http://192.168.1.36:8000/api';
 
-// Création de l'instance axios pour les requêtes authentifiées
+// Création d'une instance axios simple pour les requêtes
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
+  withCredentials: false // Désactive l'envoi des cookies
 });
 
-// Création d'une instance axios pour les requêtes publiques
-const publicApi = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
-
-// Intercepteur pour ajouter le token d'authentification
-api.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// Alias pour la rétrocompatibilité
+const publicApi = api;
 
 // Service d'authentification
-export const authService = {
+const authService = {
   // Inscription d'un utilisateur
   register: async (userData: { name: string; email: string; password: string; password_confirmation: string }) => {
     const response = await api.post('/register', userData);
@@ -63,7 +44,7 @@ export const authService = {
 };
 
 // Service pour les étudiants
-export const studentService = {
+const studentService = {
   // Récupération de tous les étudiants
   getAllStudents: () => {
     return api.get('/students');
@@ -96,7 +77,7 @@ export const studentService = {
 };
 
 // Service pour les présences
-export const attendanceService = {
+const attendanceService = {
   // Récupérer toutes les présences
   getAllAttendances: (examRoomId: string) => {
     return api.get('/attendances', {
@@ -142,7 +123,7 @@ export const attendanceService = {
 };
 
 // Service de gestion des salles d'examen (sans authentification)
-export const examRoomService = {
+const examRoomService = {
   // Récupérer toutes les salles
   getAllRooms: async () => {
     const response = await publicApi.get('/exam-rooms');
@@ -174,4 +155,77 @@ export const examRoomService = {
   },
 };
 
-export default api; 
+// Service for exams
+const examService = {
+  // Get all exams
+  getAllExams: async (): Promise<Array<{
+    id: number;
+    name: string;
+    matiere: string;
+    date: string;
+    heure_debut: string;
+    heure_fin: string;
+    [key: string]: any;
+  }>> => {
+    try {
+      const response = await publicApi.get('/exams');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching exams:', error);
+      throw error;
+    }
+  },
+
+  // Get a single exam by ID
+  getExam: async (id: number) => {
+    try {
+      const response = await publicApi.get(`/exams/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching exam ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Create a new exam
+  createExam: async (examData: any) => {
+    try {
+      const response = await api.post('/exams', examData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating exam:', error);
+      throw error;
+    }
+  },
+
+  // Update an exam
+  updateExam: async (id: number, examData: any) => {
+    try {
+      const response = await api.put(`/exams/${id}`, examData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating exam ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Delete an exam
+  deleteExam: async (id: number) => {
+    try {
+      const response = await api.delete(`/exams/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting exam ${id}:`, error);
+      throw error;
+    }
+  },
+};
+
+export {
+  authService,
+  studentService,
+  attendanceService,
+  examRoomService,
+  examService,
+  api as default
+}; 

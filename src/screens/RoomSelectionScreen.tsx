@@ -10,8 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { examRoomService } from '../lib/api';
+
+// Types pour les paramètres de navigation
+type RouteParams = {
+  examId?: number;
+  examName?: string;
+};
 
 interface Room {
   id: number;
@@ -25,6 +31,16 @@ export default function RoomSelectionScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigation = useNavigation();
+  const route = useRoute<RoomScreenRouteProp>();
+  const { examId, examName } = route.params || {};
+  
+  console.log('Paramètres de la route dans RoomSelectionScreen:', route.params);
+  console.log('examId:', examId, 'examName:', examName);
+  
+  // Afficher un message si aucun examen n'est sélectionné
+  const headerTitle = examName 
+    ? `Examen: ${examName}`
+    : 'Sélectionnez une salle';
 
   useEffect(() => {
     fetchRooms();
@@ -45,7 +61,9 @@ export default function RoomSelectionScreen() {
   const handleRoomSelect = (room: Room) => {
     navigation.navigate('Scan', {
       roomId: room.id.toString(),
-      roomName: room.name
+      roomName: room.name,
+      examId: examId,
+      examName: examName
     });
   };
 
@@ -77,7 +95,8 @@ export default function RoomSelectionScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Sélection de la salle</Text>
+        <Text style={styles.subtitle}>Examen: {examName}</Text>
+        <Text style={styles.title}>Sélectionnez une salle</Text>
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -129,6 +148,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#EF4444',
     textAlign: 'center',
+    marginTop: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,

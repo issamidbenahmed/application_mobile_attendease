@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ExamRoomController;
+use App\Http\Controllers\ExamController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,8 +27,11 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Routes pour les salles d'examen (publiques)
 Route::apiResource('exam-rooms', ExamRoomController::class);
-    
-    // Routes pour les étudiants
+
+// Routes pour les examens (publiques)
+Route::apiResource('exams', ExamController::class);
+
+// Routes pour les étudiants
     Route::apiResource('/students', StudentController::class);
     Route::get('/students/search', [StudentController::class, 'search']);
     
@@ -38,3 +42,6 @@ Route::get('/attendances/{attendance}', [AttendanceController::class, 'show']);
 Route::put('/attendances/{attendance}', [AttendanceController::class, 'update']);
 Route::delete('/attendances/{attendance}', [AttendanceController::class, 'destroy']);
     Route::post('/attendances/mark-by-code', [AttendanceController::class, 'markByCode']);
+
+// Exam routes
+Route::apiResource('exams', ExamController::class);

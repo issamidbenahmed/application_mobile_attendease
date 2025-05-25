@@ -13,6 +13,7 @@ import SignUpScreen from './src/screens/SignUpScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import ListScreen from './src/screens/ListScreen';
 import RoomSelectionScreen from './src/screens/RoomSelectionScreen';
+import ExamSelectionScreen from './src/screens/ExamSelectionScreen';
 
 // Initialisation du client de requête
 const queryClient = new QueryClient();
@@ -23,11 +24,14 @@ type RootStackParamList = {
   SignUp: undefined;
   Main: undefined;
   List: { examRoomId: string };
+  ExamSelection: undefined;
+  RoomSelection: { examId: number; examName: string };
 };
 
 type TabParamList = {
-  Rooms: undefined;
-  Scan: { roomId: string; roomName: string };
+  Exams: undefined;
+  Rooms: { examId?: number; examName?: string };
+  Scan: { roomId: string; roomName: string; examId?: number; examName?: string };
 };
 
 // Navigateurs
@@ -43,11 +47,34 @@ function AppTabs() {
         tabBarInactiveTintColor: '#6B7280',
         headerShown: false,
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarItemStyle: {
+          padding: 4,
+        },
+        tabBarShowLabel: true,
       }}
     >
       <Tab.Screen 
+        name="Exams" 
+        component={ExamSelectionScreen} 
+        options={{
+          tabBarLabel: 'Examens',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <MaterialIcons name="assignment" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
         name="Rooms" 
-        component={RoomSelectionScreen} 
+        component={RoomSelectionScreen}
+        initialParams={{ examId: undefined, examName: undefined }}
         options={{
           tabBarLabel: 'Salles',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
@@ -69,25 +96,26 @@ function AppTabs() {
   );
 }
 
+// Stack pour la navigation entre les écrans d'examen
+function ExamStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={AppTabs} />
+    </Stack.Navigator>
+  );
+}
+
 // Composant principal de l'application
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="SignIn" component={SignInScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
-            <Stack.Screen name="Main" component={AppTabs} />
-            <Stack.Screen 
-              name="List" 
-              component={ListScreen}
-              options={{ headerShown: true, title: 'Liste des présences' }}
-            />
+            <Stack.Screen name="Main" component={ExamStack} />
+            <Stack.Screen name="List" component={ListScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
