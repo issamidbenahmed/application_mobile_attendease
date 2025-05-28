@@ -7,9 +7,25 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
-  Alert,
+  Alert
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIconSVG from '../components/MaterialIconSVG';
+// Simple icon component to replace MaterialIcons
+const SimpleIcon = ({ name, size, color }: { name: string; size: number; color: string }) => {
+  // Map of icon names to simple text representations
+  const iconMap: Record<string, string> = {
+    'error': '⚠️',
+    'location-on': '📍',
+    'event-seat': '🛋',
+    'chevron-right': '→'
+  };
+  
+  return (
+    <Text style={{ fontSize: size, color }}>
+      {iconMap[name] || '▢'}
+    </Text>
+  );
+};
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { examRoomService } from '../lib/api';
 
@@ -82,7 +98,7 @@ export default function RoomSelectionScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <MaterialIcons name="error" size={24} color="#EF4444" />
+          <MaterialIconSVG name="error" size={24} color="#EF4444" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchRooms}>
             <Text style={styles.retryButtonText}>Réessayer</Text>
@@ -111,18 +127,18 @@ export default function RoomSelectionScreen() {
                 <Text style={styles.roomName}>{room.name}</Text>
                 {room.location && (
                   <Text style={styles.roomLocation}>
-                    <MaterialIcons name="location-on" size={16} color="#6B7280" />
+                    <SimpleIcon name="location-on" size={16} color="#6B7280" />
                     {' '}{room.location}
                   </Text>
                 )}
                 {room.capacity && (
                   <Text style={styles.roomCapacity}>
-                    <MaterialIcons name="event-seat" size={16} color="#6B7280" />
+                    <SimpleIcon name="event-seat" size={16} color="#6B7280" />
                     {' '}{room.capacity} places
                   </Text>
                 )}
               </View>
-              <MaterialIcons name="chevron-right" size={24} color="#6B7280" />
+              <SimpleIcon name="chevron-right" size={24} color="#6B7280" />
             </TouchableOpacity>
           ))}
         </View>

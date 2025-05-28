@@ -27,20 +27,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "sdkVersion": "49.0.0",
-    "plugins": [
-      [
-        "expo-font",
-        {
-          "fontFaces": [
-            {
-              "family": "Material Icons",
-              "fontFamily": "Material Icons",
-              "fontFile": "../node_modules/@expo/vector-icons/fonts/MaterialIcons.ttf"
-            }
-          ]
-        }
-      ]
-    ]
+    "sdkVersion": "49.0.0"
   }
 }

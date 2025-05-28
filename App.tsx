@@ -4,8 +4,23 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Text, StyleSheet } from 'react-native';
+
+// Simple icon component to replace MaterialIcons
+const SimpleIcon = ({ name, size, color }: { name: string; size: number; color: string }) => {
+  // Map of icon names to simple text representations
+  const iconMap: Record<string, string> = {
+    'assignment': '📋',
+    'meeting-room': '🚪',
+    'qr-code-scanner': '📱'
+  };
+  
+  return (
+    <Text style={{ fontSize: size, color }}>
+      {iconMap[name] || '▢'}
+    </Text>
+  );
+};
 
 // Screens
 import SignInScreen from './src/screens/SignInScreen';
@@ -67,7 +82,7 @@ function AppTabs() {
         options={{
           tabBarLabel: 'Examens',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <MaterialIcons name="assignment" size={size} color={color} />
+            <SimpleIcon name="assignment" size={size} color={color} />
           ),
         }}
       />
@@ -78,7 +93,7 @@ function AppTabs() {
         options={{
           tabBarLabel: 'Salles',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <MaterialIcons name="meeting-room" size={size} color={color} />
+            <SimpleIcon name="meeting-room" size={size} color={color} />
           ),
         }}
       />
@@ -88,7 +103,7 @@ function AppTabs() {
         options={{
           tabBarLabel: 'Scanner',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <MaterialIcons name="qr-code-scanner" size={size} color={color} />
+            <SimpleIcon name="qr-code-scanner" size={size} color={color} />
           ),
         }}
       />

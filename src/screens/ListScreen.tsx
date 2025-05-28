@@ -2,15 +2,39 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ScrollView,
   SectionList,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
-  Share
+  Share,
+  Alert
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIconSVG from '../components/MaterialIconSVG';
+
+// Fallback SimpleIcon component for any icons not available in SVG
+const SimpleIcon = ({ name, size, color, style }: { name: string; size: number; color: string; style?: any }) => {
+  // Map of icon names to simple text representations
+  const iconMap: Record<string, string> = {
+    'check-circle': '✅',
+    'error': '⚠️',
+    'arrow-back': '←',
+    'person': '👤',
+    'event': '📅',
+    'list': '📜',
+    'share': '📤',
+    'download': '📥',
+    'check': '✓',
+    'close': '✖'
+  };
+  
+  return (
+    <Text style={[{ fontSize: size, color }, style]}>
+      {iconMap[name] || '▢'}
+    </Text>
+  );
+};
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { attendanceService } from '../lib/api';
@@ -31,7 +55,7 @@ interface AttendanceRecord {
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http://192.168.1.36:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http://192.168.1.39:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
@@ -205,7 +229,7 @@ export default function ListScreen() {
             style={styles.backButton} 
             onPress={() => navigation.goBack()}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#7C3AED" />
+            <MaterialIconSVG name="arrow-back" size={24} color="#7C3AED" />
           </TouchableOpacity>
           <Text style={styles.title}>Liste des absences</Text>
         </View>
@@ -213,7 +237,7 @@ export default function ListScreen() {
           style={styles.exportButton}
           onPress={exportToCSV}
         >
-          <MaterialIcons name="file-download" size={20} color="#ffffff" style={styles.buttonIcon} />
+          <MaterialIconSVG name="download" size={20} color="#ffffff" style={styles.buttonIcon} />
           <Text style={styles.buttonText}>Exporter</Text>
         </TouchableOpacity>
       </View>
@@ -225,7 +249,7 @@ export default function ListScreen() {
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+          <MaterialIconSVG name="error" size={48} color="#EF4444" />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : (
@@ -297,7 +321,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 16,
+    paddingTop: 40,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,

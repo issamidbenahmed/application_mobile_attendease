@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -72,8 +72,8 @@ export default function ExamSelectionScreen() {
         setLoading(true);
         setError(null);
         
-        console.log('Envoi de la requête GET vers http://192.168.1.36:8000/api/exams');
-        const response = await axios.get('http://192.168.1.36:8000/api/exams');
+        console.log('Envoi de la requête GET vers http://192.168.1.39:8000/api/exams');
+        const response = await axios.get('http://192.168.1.39:8000/api/exams');
         
         console.log('Réponse reçue:', {
           status: response.status,
@@ -92,9 +92,7 @@ export default function ExamSelectionScreen() {
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des examens:', {
-          message: errorMessage,
-          response: errorResponse,
-          request: requestStatus
+          
         });
         // Fallback data in case of error
         setExams([
@@ -164,51 +162,49 @@ export default function ExamSelectionScreen() {
     );
   }
 
-  // Fonction pour rendre chaque élément de la liste
-  const renderExamItem = ({ item }: { item: Exam }) => (
-    <TouchableOpacity
-      style={styles.examCard}
-      onPress={() => handleSelectExam(item)}
-    >
-      <View style={styles.examInfo}>
-        <Text style={styles.examName}>{item.name}</Text>
-        <Text style={styles.examMatiere}>{item.matiere} • {item.filiere}</Text>
-        <View style={styles.examDateContainer}>
-          <Text style={styles.examDate}>
-            {new Date(item.date).toLocaleDateString('fr-FR', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric'
-            })}
-          </Text>
-          <Text style={styles.examTime}>
-            {item.heure_debut} - {item.heure_fin}
-          </Text>
-        </View>
-        <Text style={styles.examDetails}>
-          Salle: {item.salle} • Enseignant: {item.enseignant}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: '#EF4444' }]}>Sélectionner un examen</Text>
+        <Text style={[styles.title, { color: '#EF4444', width: '100%' }]}>Sélectionner un examen</Text>
       </View>
       
-      <FlatList
-        data={exams}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        renderItem={renderExamItem}
-        ListEmptyComponent={
-          <View style={styles.centered}>
-            <Text>Aucun examen disponible</Text>
-          </View>
-        }
-      />
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.examsContainer}>
+          {exams.length === 0 ? (
+            <View style={styles.centered}>
+              <Text>Aucun examen disponible</Text>
+            </View>
+          ) : (
+            exams.map((exam) => (
+              <TouchableOpacity
+                key={exam.id}
+                style={styles.examCard}
+                onPress={() => handleSelectExam(exam)}
+              >
+                <View style={styles.examInfo}>
+                  <Text style={styles.examName}>{exam.name}</Text>
+                  <Text style={styles.examMatiere}>{exam.matiere} • {exam.filiere}</Text>
+                  <View style={styles.examDateContainer}>
+                    <Text style={styles.examDate}>
+                      {new Date(exam.date).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </Text>
+                    <Text style={styles.examTime}>
+                      {exam.heure_debut} - {exam.heure_fin}
+                    </Text>
+                  </View>
+                  <Text style={styles.examDetails}>
+                    Salle: {exam.salle} • Enseignant: {exam.enseignant}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -219,7 +215,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   header: {
-    padding: 20,
+    padding: 16,
+    paddingTop: 40,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
     backgroundColor: 'white',
@@ -228,8 +225,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
+    textAlign: 'center',
   },
-  listContainer: {
+  scrollView: {
+    flex: 1,
+  },
+  examsContainer: {
     padding: 16,
   },
   examCard: {
@@ -271,6 +272,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
+  },
+  examDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
   },
   centered: {
     flex: 1,

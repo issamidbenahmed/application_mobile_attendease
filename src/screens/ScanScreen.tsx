@@ -9,7 +9,29 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIconSVG from '../components/MaterialIconSVG';
+
+// Fallback SimpleIcon component for any icons not available in SVG
+const SimpleIcon = ({ name, size, color, style }: { name: string; size: number; color: string; style?: any }) => {
+  // Map of icon names to simple text representations
+  const iconMap: Record<string, string> = {
+    'check-circle': '✅',
+    'error': '⚠️',
+    'qr-code-scanner': '📱',
+    'arrow-back': '←',
+    'person': '👤',
+    'event': '📅',
+    'list': '📜',
+    'close': '✖',
+    'qr-code': '📸' // Camera emoji for QR code scanning
+  };
+  
+  return (
+    <Text style={[{ fontSize: size, color }, style]}>
+      {iconMap[name] || '▢'}
+    </Text>
+  );
+};
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { attendanceService } from '../lib/api';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -158,7 +180,7 @@ export default function ScanScreen() {
             style={styles.listButton}
             onPress={handleViewList}
           >
-            <MaterialIcons name="list" size={24} color="#ffffff" />
+            <MaterialIconSVG name="list" size={24} color="#ffffff" />
             <Text style={styles.listButtonText}>Voir la liste</Text>
           </TouchableOpacity>
         </View>
@@ -176,7 +198,7 @@ export default function ScanScreen() {
             </View>
           ) : (
             <View style={styles.scanFrame}>
-              <MaterialIcons name="qr-code-scanner" size={48} color="#6B7280" />
+              <MaterialIconSVG name="qr-code-scanner" size={140} color="#7C3AED" />
             </View>
           )}
 
@@ -185,7 +207,7 @@ export default function ScanScreen() {
             onPress={() => setIsScanning(!isScanning)}
           >
             <View style={styles.buttonContent}>
-              <MaterialIcons 
+              <MaterialIconSVG 
                 name={isScanning ? "close" : "qr-code-scanner"} 
                 size={24} 
                 color="#ffffff" 
@@ -199,7 +221,7 @@ export default function ScanScreen() {
 
           {scanError && (
             <View style={styles.errorContainer}>
-              <MaterialIcons name="error" size={24} color="#EF4444" />
+              <MaterialIconSVG name="error" size={24} color="#EF4444" />
               <Text style={styles.errorText}>{scanError}</Text>
             </View>
           )}
