@@ -28,7 +28,18 @@ class AttendanceController extends Controller
         $students = Student::all();
         
         // Récupérer les présences pour la salle spécifiée
-        $attendances = Attendance::where('exam_room_id', $examRoomId)->get();
+        if (!$request->has('exam_room_id')) {
+            return response()->json([
+                'message' => 'ID de la salle requis'
+            ], 400);
+        }
+
+        $examRoomId = $request->exam_room_id;
+        $query = Attendance::where('exam_room_id', $examRoomId);
+        if ($request->has('course')) {
+            $query->where('course', $request->course);
+        }
+        $attendances = $query->get();
         
         // Créer un tableau des étudiants présents pour cette salle
         $presentStudents = $attendances->pluck('student_code_apogee')->toArray();
@@ -44,7 +55,8 @@ class AttendanceController extends Controller
                 'student' => $student,
                 'status' => in_array($student->code_apogee, $presentStudents) ? 'present' : 'absent',
                 'attended_at' => $attendance?->attended_at ?? null,
-                'exam_room_id' => $examRoomId
+                'exam_room_id' => $examRoomId,
+                'professeur_nom' => $attendance?->professeur_nom ?? '',
             ];
         });
 
@@ -144,7 +156,9 @@ class AttendanceController extends Controller
             'prenom' => 'required|string',
             'code_apogee' => 'required|string',
             'cne' => 'required|string',
-            'exam_room_id' => 'required|exists:exam_rooms,id'
+            'exam_room_id' => 'required|exists:exam_rooms,id',
+            'professeur_nom' => 'nullable|string',
+            'course' => 'nullable|string',
         ]);
 
         $student = Student::where('code_apogee', $validated['code_apogee'])->first();
@@ -157,7 +171,9 @@ class AttendanceController extends Controller
             'student_code_apogee' => $student->code_apogee,
             'exam_room_id' => $validated['exam_room_id'],
             'status' => 'present',
-            'attended_at' => now()
+            'attended_at' => now(),
+            'professeur_nom' => $validated['professeur_nom'] ?? null,
+            'course' => $validated['course'] ?? null,
         ]);
 
         return response()->json([

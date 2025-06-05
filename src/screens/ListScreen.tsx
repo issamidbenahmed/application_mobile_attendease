@@ -52,10 +52,12 @@ interface AttendanceRecord {
   status: 'present' | 'absent';
   attended_at: string | null;
   exam_room_id: string;
+  professeur_nom?: string;
+  course?: string;
 }
 
 // Assure-toi que cette URL correspond à l'adresse IP locale et au port de ton serveur Laravel
-const API_URL = 'http://192.168.1.39:8000/api'; // <--- Vérifie que cette IP est correcte!
+const API_URL = 'http://192.168.11.110:8000/api'; // <--- Vérifie que cette IP est correcte!
 
 export default function ListScreen() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
@@ -68,6 +70,7 @@ export default function ListScreen() {
 
   const route = useRoute();
   const navigation = useNavigation();
+  const { examRoomId, examName } = route.params || {};
 
   // Load attendance data from API
   useEffect(() => {
@@ -78,13 +81,12 @@ export default function ListScreen() {
         console.log('1. Début du chargement des données...');
         
         // Récupérer l'ID de la salle depuis les paramètres de navigation
-        const examRoomId = route.params?.examRoomId;
-        if (!examRoomId) {
-          setError("ID de la salle non spécifié");
+        if (!examRoomId || !examName) {
+          setError("ID de la salle ou nom d'examen non spécifié");
           return;
         }
         
-        const response = await attendanceService.getAllAttendances(examRoomId);
+        const response = await attendanceService.getAllAttendances(examRoomId, examName);
         console.log('2. Réponse reçue du serveur:', response);
         
         const data = response.data;
@@ -103,8 +105,7 @@ export default function ListScreen() {
             setError("Structure de données reçues invalide.");
             return;
           }
-          
-          console.log('5. Liste finale à afficher:', fetchedList);
+          // Plus besoin de filtrer ici, le backend filtre déjà par course et salle
           setAttendanceList(fetchedList);
 
           // Calculate statistics
@@ -145,7 +146,9 @@ export default function ListScreen() {
       return;
     }
 
-    const headers = ["Nom", "Prenom", "Code Apogee", "CNE", "Status"];
+    const headers = ["Nom", "Prenom", "Code Apogee", "CNE", "Status", "Professeur", "Salle"];
+    // Récupère le nom du professeur depuis les paramètres de navigation (transmis depuis ScanScreen)
+    const professeurNomParam = route.params?.professeur_nom || '';
     const csvRows = [
       headers.join(','),
       ...attendanceList.map(row =>
@@ -155,6 +158,8 @@ export default function ListScreen() {
           `"${row.student.code_apogee || ''}"`,
           `"${row.student.cne || ''}"`,
           `"${row.status}"`,
+          `"${professeurNomParam || row.professeur_nom || ''}"`,
+          `"${row.exam_room_id || ''}"`,
         ].join(',')
       )
     ];

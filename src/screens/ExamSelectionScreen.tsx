@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { examService } from '../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type RootStackParamList = {
@@ -72,8 +73,8 @@ export default function ExamSelectionScreen() {
         setLoading(true);
         setError(null);
         
-        console.log('Envoi de la requête GET vers http://192.168.1.39:8000/api/exams');
-        const response = await axios.get('http://192.168.1.39:8000/api/exams');
+        console.log('Envoi de la requête GET vers http://192.168.11.110:8000/api/exams');
+        const response = await axios.get('http://192.168.11.110:8000/api/exams');
         
         console.log('Réponse reçue:', {
           status: response.status,
@@ -82,20 +83,29 @@ export default function ExamSelectionScreen() {
           data: response.data ? 'Données reçues' : 'Aucune donnée'
         });
         
+        let examsData = [];
         if (response.data && Array.isArray(response.data)) {
           console.log(`Nombre d'examens reçus: ${response.data.length}`);
           console.log('Premier examen:', response.data[0]);
-          setExams(response.data);
+          examsData = response.data;
         } else {
           console.warn('Format de réponse inattendu:', response.data);
           throw new Error('Format de réponse inattendu');
+        }
+        // Récupérer le nom de l'utilisateur connecté et filtrer les examens
+        const userName = await AsyncStorage.getItem('loggedInUserName');
+        if (userName) {
+          const filteredExams = examsData.filter((exam: any) => exam.enseignant === userName);
+          setExams(filteredExams);
+        } else {
+          setExams(examsData);
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des examens:', {
           
         });
         // Fallback data in case of error
-        setExams([
+        const fallbackExams = [
           {
             id: 1,
             name: 'Examen Final de Mathématiques',
@@ -126,7 +136,14 @@ export default function ExamSelectionScreen() {
             salle: 'B205',
             code: 'PHYS-2024-001'
           },
-        ]);
+        ];
+        const userName = await AsyncStorage.getItem('loggedInUserName');
+        if (userName) {
+          const filteredExams = fallbackExams.filter((exam: any) => exam.enseignant === userName);
+          setExams(filteredExams);
+        } else {
+          setExams(fallbackExams);
+        }
       } finally {
         setLoading(false);
       }

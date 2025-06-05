@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuration de l'URL de base de l'API (remplacer par votre URL locale)
-const API_URL = 'http://192.168.1.39:8000/api';
+const API_URL = 'http://192.168.11.110:8000/api';
 
 // Création d'une instance axios simple pour les requêtes
 const api = axios.create({
@@ -78,11 +78,13 @@ const studentService = {
 
 // Service pour les présences
 const attendanceService = {
-  // Récupérer toutes les présences
-  getAllAttendances: (examRoomId: string) => {
-    return api.get('/attendances', {
-      params: { exam_room_id: examRoomId }
-    });
+  // Obtenir toutes les présences pour une salle et un examen (course)
+  getAllAttendances: (examRoomId: string, course?: string) => {
+    let url = `/attendances?exam_room_id=${examRoomId}`;
+    if (course) {
+      url += `&course=${encodeURIComponent(course)}`;
+    }
+    return api.get(url);
   },
 
   // Récupération d'une présence par ID
@@ -96,13 +98,15 @@ const attendanceService = {
   },
 
   // Marquer une présence par code QR
-  markAttendanceByCode: (studentData: { nom: string; prenom: string; code_apogee: string; cne: string; exam_room_id: string }) => {
+  markAttendanceByCode: (studentData: { nom: string; prenom: string; code_apogee: string; cne: string; exam_room_id: string; professeur_nom: string; course?: string }) => {
     return api.post('/attendances/mark-by-code', {
       nom: studentData.nom,
       prenom: studentData.prenom,
       code_apogee: studentData.code_apogee,
       cne: studentData.cne,
-      exam_room_id: studentData.exam_room_id
+      exam_room_id: studentData.exam_room_id,
+      professeur_nom: studentData.professeur_nom,
+      course: studentData.course
     });
   },
 

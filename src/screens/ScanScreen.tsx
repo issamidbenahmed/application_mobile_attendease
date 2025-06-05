@@ -34,6 +34,7 @@ const SimpleIcon = ({ name, size, color, style }: { name: string; size: number; 
 };
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { attendanceService } from '../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 // Define the structure for an attendance record
@@ -50,12 +51,14 @@ interface AttendanceRecord {
 interface RouteParams {
   roomId: string;
   roomName: string;
+  examId?: number;
+  examName?: string;
 }
 
 export default function ScanScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { roomId = '', roomName = 'Sélectionner une salle' } = route.params as RouteParams || {};
+  const { roomId = '', roomName = 'Sélectionner une salle', examId, examName } = route.params as RouteParams || {};
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanResult, setLastScanResult] = useState<AttendanceRecord | null>(null);
@@ -114,9 +117,15 @@ export default function ScanScreen() {
       };
 
       try {
-        // Try to mark attendance in API with room ID
-        console.log('Envoi des données à l\'API:', normalizedData);
-        const response = await attendanceService.markAttendanceByCode(normalizedData);
+        // Récupérer le nom du professeur connecté
+        const professeur_nom = await AsyncStorage.getItem('loggedInUserName');
+        console.log('professeur_nom récupéré:', professeur_nom); // LOG DEBUG
+        // Ajoute le nom du prof et le nom d'examen dans les données envoyées à l'API
+        // Vérification stricte de la valeur envoyée dans 'course'
+        const course = typeof examName === 'string' ? examName.trim() : '';
+        const dataToSend = { ...normalizedData, professeur_nom, course };
+        console.log('Envoi des données à l\'API (course):', dataToSend);
+        const response = await attendanceService.markAttendanceByCode(dataToSend);
         console.log('Réponse de l\'API:', response.data);
         
         // If API call successful, update the UI
@@ -145,9 +154,12 @@ export default function ScanScreen() {
     }
   };
 
-  const handleViewList = () => {
-    navigation.navigate('List', { examRoomId: roomId });
+  const handleViewList = async () => {
+    // Récupérer le nom du professeur depuis AsyncStorage
+    const professeur_nom = await AsyncStorage.getItem('loggedInUserName');
+    navigation.navigate('List', { examRoomId: roomId, examName, professeur_nom });
   };
+
 
   if (hasPermission === null) {
     return (

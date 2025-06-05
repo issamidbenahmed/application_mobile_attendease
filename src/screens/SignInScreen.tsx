@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { authService } from '../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Types pour la navigation
 type RootStackParamList = {
@@ -44,8 +45,15 @@ export default function SignInScreen({ navigation }: SignInScreenProps) {
       console.log('Tentative de connexion avec:', { email });
       const response = await authService.login({ email, password });
       console.log('Réponse de connexion:', response);
+
+      // Stocker le nom de l'utilisateur connecté dans AsyncStorage
+      if (response && response.user && response.user.name) {
+        await AsyncStorage.setItem('loggedInUserName', response.user.name);
+      } else if (response && response.name) {
+        await AsyncStorage.setItem('loggedInUserName', response.name);
+      }
       setIsLoading(false);
-      
+
       // Forcer la navigation vers Main
       navigation.reset({
         index: 0,

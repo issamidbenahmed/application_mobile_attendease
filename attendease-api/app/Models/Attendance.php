@@ -20,6 +20,7 @@ class Attendance extends Model
         'exam_room_id',
         'status',
         'course',
+        'professeur_nom', // Ajouté pour permettre la sauvegarde du nom du professeur
         'attended_at',
         'notes',
     ];
