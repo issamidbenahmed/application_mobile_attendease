@@ -1,6 +1,10 @@
 # Attendease
 
-Application mobile de gestion des présences des étudiants.
+Application mobile de gestion des présences des étudiants :
+
+-marquer la présence par scan de code QR.
+-gérer les exams , les salles et les professeurs superviseurs.
+-exporter le listes complètes (présents/absents) avec l'exam et la salle sous forme csv.
 
 ## Prérequis
 
